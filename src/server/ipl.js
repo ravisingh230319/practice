@@ -2,14 +2,15 @@
 function totalMatchesPlayedPerYear(matches) {
     let results = {};
 
-    for (let index = 0; index < matches.length; index += 1) {
-        if (!results.hasOwnProperty(matches[index].season)) {
-            results[matches[index].season] = 1;
-        } 
-        else {
-            results[matches[index].season] += 1;
+    matches.forEach(match => {
+        const season=match.season;
+        if (season in results){
+            results[season] += 1;
         }
-    }
+        else{
+            results[season] = 1;
+        }
+    });
     return results;
 }
 
@@ -18,97 +19,95 @@ function noOfMatchesWonPerTeamPerYear(matches) {
     let results = {};
     let matchesWonPerTeam = {};
 
-    for (let index = 0; index < matches.length; index += 1) {
-        if (!results.hasOwnProperty(matches[index].season)) {
+    matches.forEach((match) => {
+        if (!results.hasOwnProperty(match.season)) {
             matchesWonPerTeam = {};
-        } 
-        else {
-            if (!matchesWonPerTeam.hasOwnProperty(matches[index].winner)) {
-            matchesWonPerTeam[matches[index].winner] = 1; 
-            } 
-            else {
-            matchesWonPerTeam[matches[index].winner] += 1;
-            }    
+        } else {
+            if (!matchesWonPerTeam.hasOwnProperty(match.winner)) {
+                matchesWonPerTeam[match.winner] = 1;
+            } else {
+                matchesWonPerTeam[match.winner] += 1;
+            }
         }
-        results[matches[index].season] = matchesWonPerTeam;
-    }
+        results[match.season] = matchesWonPerTeam;
+    });
     return results;
 }
 
 //This function used to count the extra runs conceded per team in the year 2016.
 function extraRunsConcededPerTeam2016(deliveries, matches) {
     let results = {};
-    let yearId = 0;
+    let seasonDetails = [];
 
-    for (let outerIndex = 0; outerIndex < matches.length; outerIndex += 1) {
-        if (matches[outerIndex].season == 2016) {
-            yearId = matches[outerIndex].id;
-        }
-        else
-        {
-            yearId = 0;
-        }
-
-        for (let innerIndex = 0; innerIndex < deliveries.length; innerIndex += 1) {
-            if (deliveries[innerIndex].match_id == yearId) {
-                if (!results.hasOwnProperty(deliveries[innerIndex].bowling_team)) {
-                    results[deliveries[innerIndex].bowling_team] = Number(deliveries[innerIndex].extra_runs);
-                } 
-                else {
-                    results[deliveries[innerIndex].bowling_team] += Number(deliveries[innerIndex].extra_runs);
+    seasonDetails = matches.filter(match => match.season == 2016);
+    seasonDetails.forEach((matchId)=>{
+        deliveries.forEach((delivery) => {
+            if (delivery.match_id == matchId.id) {
+                if (!results.hasOwnProperty(delivery.bowling_team)) {
+                    results[delivery.bowling_team] = Number(delivery.extra_runs);
+                } else {
+                    results[delivery.bowling_team] += Number(delivery.extra_runs);
                 }
             }
-        }
-    }
-    console.log
+        });
+    });
+
     return results;
 }
 
 //This function used to get the top 10 economical bowlers in the year 2015.
 function top10EconomicalBowlers2015(deliveries, matches) {
-    let yearId = 0;
-    let counter = 0;
-    let results = [];
+    let results = {};
     let economyOfBowler = {};
-     
-    for (let outerIndex = 0; outerIndex < matches.length; outerIndex += 1) {
-        if (matches[outerIndex].season == 2015) {
-            yearId = matches[outerIndex].id;
-        }
-        else
-        {
-            yearId = 0;
-        }
-        
-        for (let innerIndex = 0; innerIndex < deliveries.length; innerIndex += 1) {
-            if (deliveries[innerIndex].match_id == yearId) {
-                if (!economyOfBowler.hasOwnProperty(deliveries[innerIndex].bowler)) {
-                    economyOfBowler[deliveries[innerIndex].bowler] = Number(deliveries[innerIndex].total_runs);
-                } 
-                else {
-                    economyOfBowler[deliveries[innerIndex].bowler] += Number(deliveries[innerIndex].total_runs);
+    let ball = {};
+    let seasonDetails = [];
+
+    seasonDetails = matches.filter(match => match.season == 2015);
+    seasonDetails.forEach((matchId)=>{
+        deliveries.forEach((delivery)=>{ 
+            let wideBall = delivery.wide_runs;
+            let noBall = delivery.noball_runs;
+
+            if (delivery.match_id == matchId.id) {
+                if (!economyOfBowler.hasOwnProperty(delivery.bowler)) {
+                    economyOfBowler[delivery.bowler] = Number(delivery.total_runs);
+                } else {
+                    economyOfBowler[delivery.bowler] += Number(delivery.total_runs);
+                }
+
+                if (!ball.hasOwnProperty(delivery.bowler)) {
+                    if (wideBall == 0 && noBall == 0) {
+                        ball[delivery.bowler] = 1;
+                    } else {
+                        ball[delivery.bowler] = 0;
+                    }
+                } else {
+                    if (wideBall == 0 && noBall == 0) {
+                        ball[delivery.bowler] += 1;
+                    }
                 }
             }
-        }
-    }
+        });
+    });
 
-    let sortedEconomy = Object.fromEntries(Object.entries(economyOfBowler).sort((x, y) => x[1]-y[1]));
+    let sortedEconomy = ball;
 
-    for (let bowlerName in sortedEconomy) {
-        if (counter > 10) {
-            break;
-        } 
-        else {
-            results.push(bowlerName);
-            counter += 1;
-        }
-    }
+    Object.keys(sortedEconomy).map(key => {
+        sortedEconomy[key] = ((economyOfBowler[key] * 6) / sortedEconomy[key]).toFixed(2);
+    });
+    // In sorting the below line puts all the NaN values in order after sorting
+    sortedEconomy = Object.fromEntries(Object.entries(sortedEconomy).sort((x, y) => x[1] - y[1]));    
+    results = Object.keys(sortedEconomy).slice(0, 10).reduce((result, key) => {
+        result[key] = sortedEconomy[key];
+        return result;
+    }, {});
     return results;
 }
 
-module.exports = { totalMatchesPlayedPerYear,
-                   noOfMatchesWonPerTeamPerYear,
-                   extraRunsConcededPerTeam2016,
-                   top10EconomicalBowlers2015
+module.exports = {
+    totalMatchesPlayedPerYear,
+    noOfMatchesWonPerTeamPerYear,
+    extraRunsConcededPerTeam2016,
+    top10EconomicalBowlers2015,
 };
 
